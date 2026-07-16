@@ -28,6 +28,12 @@ la respuesta original como JSON raw mediante escritura atómica.
 
 ## Ejecución local
 
+Puedes preparar la configuración local copiando el ejemplo:
+
+```bash
+cp .env.example .env
+```
+
 ```bash
 make ingest START_DATE=2024-01-01 END_DATE=2024-01-07
 ```
@@ -43,6 +49,9 @@ También se puede cambiar la raíz de almacenamiento:
 ```bash
 make ingest START_DATE=2024-01-01 END_DATE=2024-01-07 RAW_ROOT=/tmp/energy-raw
 ```
+
+Si `RAW_ROOT` está definido en `.env`, la CLI lo usa cuando no se pasa
+`RAW_ROOT` por comando.
 
 ## Validación
 

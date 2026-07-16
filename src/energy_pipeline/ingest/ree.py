@@ -1,7 +1,9 @@
 import argparse
+import os
 from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
 
 from energy_pipeline.extract.ree import fetch_energy_balance
 from energy_pipeline.storage.raw import save_raw_json
@@ -32,6 +34,8 @@ def ingest_energy_balance(
 
 
 def parse_args() -> argparse.Namespace:
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Ingest REE energy balance raw data.",
     )
@@ -47,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--raw-root",
-        default=Path("data/raw"),
+        default=Path(os.getenv("RAW_ROOT", "data/raw")),
         type=Path,
         help="Root directory where raw files will be stored.",
     )
