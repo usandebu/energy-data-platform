@@ -1,8 +1,9 @@
 from unittest.mock import Mock
 
+import pytest
+
 from energy_pipeline.extract.ree import BASE_URL, fetch_energy_balance
 
-import pytest
 
 def test_fetch_energy_balance_returns_payload():
     expected_payload = {

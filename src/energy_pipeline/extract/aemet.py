@@ -1,5 +1,7 @@
 import requests
 
+from energy_pipeline.extract.http import build_retry_session
+
 BASE_URL = "https://opendata.aemet.es/opendata/api"
 
 
@@ -12,7 +14,7 @@ def fetch_daily_climatology(
     if session is not None:
         return _fetch_daily_climatology(start_date, end_date, api_key, session)
 
-    with requests.Session() as client:
+    with build_retry_session() as client:
         return _fetch_daily_climatology(start_date, end_date, api_key, client)
 
 
