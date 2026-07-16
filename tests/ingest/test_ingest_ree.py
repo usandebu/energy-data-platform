@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -37,7 +38,7 @@ def test_ingest_energy_balance_fetches_and_saves_raw_payload(tmp_path):
     response.raise_for_status.assert_called_once_with()
 
 
-def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, capsys):
+def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, caplog):
     destination = tmp_path / "ree" / "balance-electrico" / "2024-01-01_2024-01-02.json"
     calls = []
 
@@ -65,7 +66,8 @@ def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, capsys
         ],
     )
 
-    ree.main()
+    with caplog.at_level(logging.INFO, logger=ree.logger.name):
+        ree.main()
 
     assert calls == [
         {
@@ -74,9 +76,7 @@ def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, capsys
             "raw_root": tmp_path,
         }
     ]
-    assert capsys.readouterr().out == (
-        f"Raw REE energy balance saved to {destination}\n"
-    )
+    assert f"Raw REE energy balance saved to {destination}" in caplog.text
 
 
 def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):

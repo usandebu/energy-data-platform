@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from dotenv import load_dotenv
 
 from energy_pipeline.extract.ree import fetch_energy_balance
 from energy_pipeline.storage.raw import save_raw_json
+
+logger = logging.getLogger(__name__)
 
 
 def ingest_energy_balance(
@@ -60,6 +63,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+    )
+
     args = parse_args()
 
     destination = ingest_energy_balance(
@@ -68,7 +76,7 @@ def main() -> None:
         raw_root=args.raw_root,
     )
 
-    print(f"Raw REE energy balance saved to {destination}")
+    logger.info("Raw REE energy balance saved to %s", destination)
 
 
 if __name__ == "__main__":
