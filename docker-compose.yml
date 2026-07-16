@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    init: true
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    working_dir: /app
