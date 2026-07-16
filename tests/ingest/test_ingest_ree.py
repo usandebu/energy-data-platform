@@ -67,8 +67,9 @@ def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, caplog
     )
 
     with caplog.at_level(logging.INFO, logger=ree.logger.name):
-        ree.main()
+        exit_code = ree.run()
 
+    assert exit_code == 0
     assert calls == [
         {
             "start_date": "2024-01-01",
@@ -108,8 +109,9 @@ def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
         ],
     )
 
-    ree.main()
+    exit_code = ree.run()
 
+    assert exit_code == 0
     assert calls == [
         {
             "start_date": "2024-01-01",
@@ -144,8 +146,9 @@ def test_cli_raw_root_arg_has_priority_over_environment(monkeypatch, tmp_path):
         ],
     )
 
-    ree.main()
+    exit_code = ree.run()
 
+    assert exit_code == 0
     assert calls == [cli_raw_root]
 
 
@@ -169,6 +172,30 @@ def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
         ],
     )
 
-    ree.main()
+    exit_code = ree.run()
 
+    assert exit_code == 0
     assert calls == [Path("data/raw")]
+
+
+def test_run_logs_value_error_and_returns_failure(monkeypatch, caplog):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+        raise ValueError("start_date must be before or equal to end_date")
+
+    monkeypatch.setattr(ree, "ingest_energy_balance", fake_ingest_energy_balance)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ree",
+            "--start-date",
+            "2024-01-02",
+            "--end-date",
+            "2024-01-01",
+        ],
+    )
+
+    with caplog.at_level(logging.ERROR, logger=ree.logger.name):
+        exit_code = ree.run()
+
+    assert exit_code == 1
+    assert "start_date must be before or equal to end_date" in caplog.text

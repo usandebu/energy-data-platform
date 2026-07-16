@@ -3,8 +3,6 @@ import logging
 from pathlib import Path
 from unittest.mock import Mock
 
-import pytest
-
 from energy_pipeline.ingest import aemet
 from energy_pipeline.ingest.aemet import ingest_daily_climatology
 
@@ -82,8 +80,9 @@ def test_main_ingests_daily_climatology_from_cli_args(monkeypatch, tmp_path, cap
     )
 
     with caplog.at_level(logging.INFO, logger=aemet.logger.name):
-        aemet.main()
+        exit_code = aemet.run()
 
+    assert exit_code == 0
     assert calls == [
         {
             "start_date": "2024-01-01",
@@ -95,7 +94,7 @@ def test_main_ingests_daily_climatology_from_cli_args(monkeypatch, tmp_path, cap
     assert f"Raw AEMET daily climatology saved to {destination}" in caplog.text
 
 
-def test_main_requires_aemet_api_key(monkeypatch):
+def test_run_requires_aemet_api_key(monkeypatch, caplog):
     monkeypatch.setenv("AEMET_API_KEY", "")
     monkeypatch.setattr(
         "sys.argv",
@@ -108,11 +107,11 @@ def test_main_requires_aemet_api_key(monkeypatch):
         ],
     )
 
-    with pytest.raises(
-        ValueError,
-        match="AEMET_API_KEY environment variable is required",
-    ):
-        aemet.main()
+    with caplog.at_level(logging.ERROR, logger=aemet.logger.name):
+        exit_code = aemet.run()
+
+    assert exit_code == 1
+    assert "AEMET_API_KEY environment variable is required" in caplog.text
 
 
 def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
@@ -138,8 +137,9 @@ def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
         ],
     )
 
-    aemet.main()
+    exit_code = aemet.run()
 
+    assert exit_code == 0
     assert calls == [env_raw_root]
 
 
@@ -164,6 +164,31 @@ def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
         ],
     )
 
-    aemet.main()
+    exit_code = aemet.run()
 
+    assert exit_code == 0
     assert calls == [Path("data/raw")]
+
+
+def test_run_logs_value_error_and_returns_failure(monkeypatch, caplog):
+    def fake_ingest_daily_climatology(start_date, end_date, api_key, raw_root):
+        raise ValueError("start_date must be before or equal to end_date")
+
+    monkeypatch.setattr(aemet, "ingest_daily_climatology", fake_ingest_daily_climatology)
+    monkeypatch.setenv("AEMET_API_KEY", "fake-api-key")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "aemet",
+            "--start-date",
+            "2024-01-02",
+            "--end-date",
+            "2024-01-01",
+        ],
+    )
+
+    with caplog.at_level(logging.ERROR, logger=aemet.logger.name):
+        exit_code = aemet.run()
+
+    assert exit_code == 1
+    assert "start_date must be before or equal to end_date" in caplog.text

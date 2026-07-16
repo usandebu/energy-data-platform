@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def run() -> int:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -73,16 +73,26 @@ def main() -> None:
     args = parse_args()
     api_key = os.getenv("AEMET_API_KEY")
     if not api_key:
-        raise ValueError("AEMET_API_KEY environment variable is required")
+        logger.error("AEMET_API_KEY environment variable is required")
+        return 1
 
-    destination = ingest_daily_climatology(
-        start_date=args.start_date,
-        end_date=args.end_date,
-        api_key=api_key,
-        raw_root=args.raw_root,
-    )
+    try:
+        destination = ingest_daily_climatology(
+            start_date=args.start_date,
+            end_date=args.end_date,
+            api_key=api_key,
+            raw_root=args.raw_root,
+        )
+    except ValueError as error:
+        logger.error("%s", error)
+        return 1
 
     logger.info("Raw AEMET daily climatology saved to %s", destination)
+    return 0
+
+
+def main() -> None:
+    raise SystemExit(run())
 
 
 if __name__ == "__main__":

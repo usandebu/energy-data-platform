@@ -100,3 +100,33 @@ def test_fetch_daily_climatology_rejects_non_list_payload():
 
     metadata_response.raise_for_status.assert_called_once_with()
     data_response.raise_for_status.assert_called_once_with()
+
+
+@pytest.mark.parametrize(
+    ("start_date", "end_date", "expected_message"),
+    [
+        ("2024/01/01", "2024-01-02", "start_date must use YYYY-MM-DD format"),
+        ("2024-01-01", "2024-02-30", "end_date must use YYYY-MM-DD format"),
+        (
+            "2024-01-02",
+            "2024-01-01",
+            "start_date must be before or equal to end_date",
+        ),
+    ],
+)
+def test_fetch_daily_climatology_rejects_invalid_date_range(
+    start_date,
+    end_date,
+    expected_message,
+):
+    session = Mock()
+
+    with pytest.raises(ValueError, match=expected_message):
+        fetch_daily_climatology(
+            start_date=start_date,
+            end_date=end_date,
+            api_key="fake-api-key",
+            session=session,
+        )
+
+    session.get.assert_not_called()

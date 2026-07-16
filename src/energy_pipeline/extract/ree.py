@@ -1,5 +1,6 @@
 import requests
 
+from energy_pipeline.extract.dates import validate_date_range
 from energy_pipeline.extract.http import build_retry_session
 
 BASE_URL = "https://apidatos.ree.es/es/datos"
@@ -10,6 +11,8 @@ def fetch_energy_balance(
     end_date: str,
     session: requests.Session | None = None,
 ) -> dict:
+    validate_date_range(start_date, end_date)
+
     if session is not None:
         return _fetch_energy_balance(start_date, end_date, session)
 

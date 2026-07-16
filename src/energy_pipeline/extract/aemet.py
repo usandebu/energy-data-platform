@@ -1,5 +1,6 @@
 import requests
 
+from energy_pipeline.extract.dates import validate_date_range
 from energy_pipeline.extract.http import build_retry_session
 
 BASE_URL = "https://opendata.aemet.es/opendata/api"
@@ -11,6 +12,8 @@ def fetch_daily_climatology(
     api_key: str,
     session: requests.Session | None = None,
 ) -> list[dict]:
+    validate_date_range(start_date, end_date)
+
     if session is not None:
         return _fetch_daily_climatology(start_date, end_date, api_key, session)
 

@@ -62,7 +62,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def run() -> int:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -70,13 +70,22 @@ def main() -> None:
 
     args = parse_args()
 
-    destination = ingest_energy_balance(
-        start_date=args.start_date,
-        end_date=args.end_date,
-        raw_root=args.raw_root,
-    )
+    try:
+        destination = ingest_energy_balance(
+            start_date=args.start_date,
+            end_date=args.end_date,
+            raw_root=args.raw_root,
+        )
+    except ValueError as error:
+        logger.error("%s", error)
+        return 1
 
     logger.info("Raw REE energy balance saved to %s", destination)
+    return 0
+
+
+def main() -> None:
+    raise SystemExit(run())
 
 
 if __name__ == "__main__":

@@ -57,3 +57,32 @@ def test_fetch_energy_balance_rejects_unexpected_structure():
         )
 
     response.raise_for_status.assert_called_once_with()
+
+
+@pytest.mark.parametrize(
+    ("start_date", "end_date", "expected_message"),
+    [
+        ("2024/01/01", "2024-01-02", "start_date must use YYYY-MM-DD format"),
+        ("2024-01-01", "2024-02-30", "end_date must use YYYY-MM-DD format"),
+        (
+            "2024-01-02",
+            "2024-01-01",
+            "start_date must be before or equal to end_date",
+        ),
+    ],
+)
+def test_fetch_energy_balance_rejects_invalid_date_range(
+    start_date,
+    end_date,
+    expected_message,
+):
+    session = Mock()
+
+    with pytest.raises(ValueError, match=expected_message):
+        fetch_energy_balance(
+            start_date=start_date,
+            end_date=end_date,
+            session=session,
+        )
+
+    session.get.assert_not_called()
