@@ -1,7 +1,9 @@
 from unittest.mock import Mock
 
 import pytest
+import requests
 
+from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.ree import BASE_URL, fetch_energy_balance
 
 
@@ -47,7 +49,7 @@ def test_fetch_energy_balance_rejects_unexpected_structure():
     session.get.return_value = response
 
     with pytest.raises(
-        ValueError,
+        ExtractionError,
         match="Unexpected REE response structure",
     ):
         fetch_energy_balance(
@@ -57,6 +59,36 @@ def test_fetch_energy_balance_rejects_unexpected_structure():
         )
 
     response.raise_for_status.assert_called_once_with()
+
+
+def test_fetch_energy_balance_wraps_http_errors():
+    response = Mock()
+    response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+
+    session = Mock()
+    session.get.return_value = response
+
+    with pytest.raises(ExtractionError, match="Failed to fetch REE energy balance"):
+        fetch_energy_balance(
+            start_date="2024-01-01",
+            end_date="2024-01-02",
+            session=session,
+        )
+
+
+def test_fetch_energy_balance_wraps_invalid_json():
+    response = Mock()
+    response.json.side_effect = ValueError("invalid json")
+
+    session = Mock()
+    session.get.return_value = response
+
+    with pytest.raises(ExtractionError, match="REE response is not valid JSON"):
+        fetch_energy_balance(
+            start_date="2024-01-01",
+            end_date="2024-01-02",
+            session=session,
+        )
 
 
 @pytest.mark.parametrize(

@@ -7,6 +7,8 @@ import requests
 from dotenv import load_dotenv
 
 from energy_pipeline.extract.aemet import fetch_daily_climatology
+from energy_pipeline.extract.errors import ExtractionError
+from energy_pipeline.ingest.config import parse_raw_root
 from energy_pipeline.storage.raw import save_raw_json
 
 logger = logging.getLogger(__name__)
@@ -56,8 +58,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--raw-root",
-        default=Path(os.getenv("RAW_ROOT", "data/raw")),
-        type=Path,
+        default=parse_raw_root(os.getenv("RAW_ROOT", "data/raw")),
+        type=parse_raw_root,
         help="Root directory where raw files will be stored.",
     )
 
@@ -70,20 +72,19 @@ def run() -> int:
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
 
-    args = parse_args()
-    api_key = os.getenv("AEMET_API_KEY")
-    if not api_key:
-        logger.error("AEMET_API_KEY environment variable is required")
-        return 1
-
     try:
+        args = parse_args()
+        api_key = os.getenv("AEMET_API_KEY")
+        if not api_key:
+            raise ValueError("AEMET_API_KEY environment variable is required")
+
         destination = ingest_daily_climatology(
             start_date=args.start_date,
             end_date=args.end_date,
             api_key=api_key,
             raw_root=args.raw_root,
         )
-    except ValueError as error:
+    except (ExtractionError, ValueError) as error:
         logger.error("%s", error)
         return 1
 

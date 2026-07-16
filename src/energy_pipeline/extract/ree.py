@@ -1,6 +1,7 @@
 import requests
 
 from energy_pipeline.extract.dates import validate_date_range
+from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.http import build_retry_session
 
 BASE_URL = "https://apidatos.ree.es/es/datos"
@@ -34,13 +35,16 @@ def _fetch_energy_balance(
         "time_trunc": "day",
     }
 
-    response = client.get(url, params=params, timeout=10)
-
-    response.raise_for_status()
-
-    payload = response.json()
+    try:
+        response = client.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as error:
+        raise ExtractionError("Failed to fetch REE energy balance") from error
+    except ValueError as error:
+        raise ExtractionError("REE response is not valid JSON") from error
 
     if "data" not in payload or "included" not in payload:
-        raise ValueError("Unexpected REE response structure")
+        raise ExtractionError("Unexpected REE response structure")
 
     return payload

@@ -6,7 +6,9 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.ree import fetch_energy_balance
+from energy_pipeline.ingest.config import parse_raw_root
 from energy_pipeline.storage.raw import save_raw_json
 
 logger = logging.getLogger(__name__)
@@ -54,8 +56,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--raw-root",
-        default=Path(os.getenv("RAW_ROOT", "data/raw")),
-        type=Path,
+        default=parse_raw_root(os.getenv("RAW_ROOT", "data/raw")),
+        type=parse_raw_root,
         help="Root directory where raw files will be stored.",
     )
 
@@ -68,15 +70,14 @@ def run() -> int:
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
 
-    args = parse_args()
-
     try:
+        args = parse_args()
         destination = ingest_energy_balance(
             start_date=args.start_date,
             end_date=args.end_date,
             raw_root=args.raw_root,
         )
-    except ValueError as error:
+    except (ExtractionError, ValueError) as error:
         logger.error("%s", error)
         return 1
 

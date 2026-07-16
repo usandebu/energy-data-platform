@@ -199,3 +199,23 @@ def test_run_logs_value_error_and_returns_failure(monkeypatch, caplog):
 
     assert exit_code == 1
     assert "start_date must be before or equal to end_date" in caplog.text
+
+
+def test_run_rejects_empty_raw_root(monkeypatch, caplog):
+    monkeypatch.setenv("RAW_ROOT", "")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "ree",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-01-02",
+        ],
+    )
+
+    with caplog.at_level(logging.ERROR, logger=ree.logger.name):
+        exit_code = ree.run()
+
+    assert exit_code == 1
+    assert "RAW_ROOT cannot be empty" in caplog.text

@@ -1,6 +1,7 @@
 import requests
 
 from energy_pipeline.extract.dates import validate_date_range
+from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.http import build_retry_session
 
 BASE_URL = "https://opendata.aemet.es/opendata/api"
@@ -34,23 +35,33 @@ def _fetch_daily_climatology(
         "todasestaciones"
     )
 
-    metadata_response = client.get(
-        metadata_url,
-        headers={"api_key": api_key},
-        timeout=10,
-    )
-    metadata_response.raise_for_status()
-    metadata = metadata_response.json()
+    try:
+        metadata_response = client.get(
+            metadata_url,
+            headers={"api_key": api_key},
+            timeout=10,
+        )
+        metadata_response.raise_for_status()
+        metadata = metadata_response.json()
+    except requests.RequestException as error:
+        raise ExtractionError("Failed to fetch AEMET metadata") from error
+    except ValueError as error:
+        raise ExtractionError("AEMET metadata response is not valid JSON") from error
 
     data_url = metadata.get("datos")
     if not data_url:
-        raise ValueError("Unexpected AEMET metadata response structure")
+        raise ExtractionError("Unexpected AEMET metadata response structure")
 
-    data_response = client.get(data_url, timeout=10)
-    data_response.raise_for_status()
-    payload = data_response.json()
+    try:
+        data_response = client.get(data_url, timeout=10)
+        data_response.raise_for_status()
+        payload = data_response.json()
+    except requests.RequestException as error:
+        raise ExtractionError("Failed to fetch AEMET data") from error
+    except ValueError as error:
+        raise ExtractionError("AEMET data response is not valid JSON") from error
 
     if not isinstance(payload, list):
-        raise ValueError("Unexpected AEMET data response structure")
+        raise ExtractionError("Unexpected AEMET data response structure")
 
     return payload

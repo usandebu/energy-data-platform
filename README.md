@@ -1,68 +1,123 @@
 # Energy Data Platform
 
-Plataforma de datos para trabajar con información energética y meteorológica de España.
+Plataforma de datos para analizar la relación entre generación renovable y
+condiciones meteorológicas en España.
 
-El proyecto parte de dos fuentes principales: datos de generación eléctrica de REE y datos meteorológicos de AEMET. La idea es construir una pipeline sólida, cercana a un entorno real, que permita extraer, validar, transformar y analizar estos datos de forma reproducible.
+El proyecto trabaja con datos reales de Red Eléctrica de España (REE) y AEMET,
+con una arquitectura pensada para evolucionar desde una ingesta reproducible en
+local hacia una plataforma cloud en AWS.
 
-## Objetivo
+---
 
-Analizar cómo influyen variables como la temperatura, el viento o las horas de sol en la generación renovable en España.
+## Resumen
 
-## Stack previsto
+- Descarga y conservación de datos energéticos y meteorológicos reales.
+- Diseño por capas para separar ingesta, almacenamiento, transformación,
+  modelado y orquestación.
+- Conservación de datos raw para permitir reprocesamiento y auditoría.
+- Enfoque en reproducibilidad, testing, control de errores y despliegue cloud.
+
+---
+
+## Objetivo del Proyecto
+
+Construir una pipeline de datos que permita cruzar generación eléctrica y datos
+meteorológicos para responder preguntas como:
+
+> ¿Cómo influyen la temperatura, el viento o la radiación solar en la generación
+> renovable en España?
+
+---
+
+## Tecnologías Principales
 
 - Python
 - Docker
 - Airflow
 - dbt
-- DuckDB
-- AWS S3 / Athena / Glue
+- AWS S3, Glue Data Catalog y Athena
 - Terraform
-- PySpark
+- Databricks / PySpark
+- pytest y ruff
 
-## Estado
+---
 
-Proyecto en Fase 1: ingesta local.
+## Fuentes de Datos
 
-Ya existe una primera ingesta de REE que descarga el balance eléctrico y guarda
-la respuesta original como JSON raw mediante escritura atómica.
+### REE
 
-## Ejecución local
+Datos públicos de balance eléctrico, demanda y generación.
 
-Puedes preparar la configuración local copiando el ejemplo:
+### AEMET
+
+Datos meteorológicos oficiales mediante AEMET OpenData.
+
+---
+
+## Arquitectura Prevista
+
+```text
+APIs REE / AEMET
+        |
+        v
+Ingesta Python
+        |
+        v
+Data Lake en AWS S3
+        |
+        +--> Glue Data Catalog / Athena
+        |
+        +--> dbt
+        |
+        +--> Databricks / PySpark
+        |
+        v
+Modelos analíticos y datasets preparados para análisis
+```
+
+---
+
+## Ejecución Local
+
+Crear la configuración local:
 
 ```bash
 cp .env.example .env
 ```
 
+Para AEMET, añadir la API key en `.env`:
+
+```env
+AEMET_API_KEY=tu_api_key
+```
+
+Ingesta REE:
+
 ```bash
 make ingest START_DATE=2024-01-01 END_DATE=2024-01-07
 ```
 
-El archivo se guarda por defecto en:
-
-```text
-data/raw/ree/balance-electrico/2024-01-01_2024-01-07.json
-```
-
-También se puede cambiar la raíz de almacenamiento:
+Ingesta AEMET:
 
 ```bash
-make ingest START_DATE=2024-01-01 END_DATE=2024-01-07 RAW_ROOT=/tmp/energy-raw
+make ingest-aemet START_DATE=2024-01-01 END_DATE=2024-01-07
 ```
 
-Si `RAW_ROOT` está definido en `.env`, la CLI lo usa cuando no se pasa
-`RAW_ROOT` por comando.
-
-Para ingestar climatologia diaria de AEMET necesitas definir `AEMET_API_KEY` en
-`.env` y ejecutar:
-
-```bash
-make ingest-aemet START_DATE=2024-01-01 END_DATE=2024-01-02
-```
-
-## Validación
+Validación:
 
 ```bash
 make test
 make lint
 ```
+
+---
+
+## Qué Demuestra
+
+- Diseño de una pipeline de datos con fuentes externas reales.
+- Separación clara entre extracción, ingesta, almacenamiento y transformación.
+- Trabajo con APIs, configuración segura y conservación de datos raw.
+- Buenas prácticas de desarrollo: tests, logging, validaciones y manejo de
+  errores.
+- Evolución progresiva hacia una arquitectura cloud con herramientas habituales
+  en Data Engineering.
