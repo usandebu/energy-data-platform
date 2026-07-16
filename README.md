@@ -91,23 +91,44 @@ Para AEMET, añadir la API key en `.env`:
 AEMET_API_KEY=tu_api_key
 ```
 
+Si se usa Airflow local con DockerOperator, definir también la ruta absoluta del
+proyecto en la máquina host:
+
+```env
+PROJECT_HOST_ROOT=/ruta/absoluta/a/energy-data-platform
+```
+
 Ingesta REE:
 
 ```bash
-make ingest START_DATE=2024-01-01 END_DATE=2024-01-07
+uv run python -m energy_pipeline.ingest.ree --start-date 2024-01-01 --end-date 2024-01-07
 ```
 
 Ingesta AEMET:
 
 ```bash
-make ingest-aemet START_DATE=2024-01-01 END_DATE=2024-01-07
+uv run python -m energy_pipeline.ingest.aemet --start-date 2024-01-01 --end-date 2024-01-07
 ```
 
 Validación:
 
 ```bash
-make test
-make lint
+uv run pytest -q
+uv run ruff check .
+```
+
+Ejecución con Docker:
+
+```bash
+docker compose run --rm app python -m energy_pipeline.ingest.ree --start-date 2024-01-01 --end-date 2024-01-07
+docker compose run --rm app python -m energy_pipeline.ingest.aemet --start-date 2024-01-01 --end-date 2024-01-07
+```
+
+Validación con Docker:
+
+```bash
+docker compose run --rm app python -m pytest -q
+docker compose run --rm app python -m ruff check .
 ```
 
 ---

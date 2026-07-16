@@ -4,16 +4,13 @@ WORKDIR /app
 
 ENV UV_SYSTEM_PYTHON=1
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends make \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
+COPY src ./src
 
-RUN uv pip install --system -e ".[dev]"
+RUN uv pip install --system -e . "pytest>=9.1.1" "ruff>=0.15.21"
 
 COPY . .
 
-CMD ["make", "test"]
+CMD ["python", "-m", "pytest", "-q"]
