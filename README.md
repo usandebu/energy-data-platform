@@ -53,6 +53,13 @@ make ingest START_DATE=2024-01-01 END_DATE=2024-01-07 RAW_ROOT=/tmp/energy-raw
 Si `RAW_ROOT` está definido en `.env`, la CLI lo usa cuando no se pasa
 `RAW_ROOT` por comando.
 
+Para ingestar climatologia diaria de AEMET necesitas definir `AEMET_API_KEY` en
+`.env` y ejecutar:
+
+```bash
+make ingest-aemet START_DATE=2024-01-01 END_DATE=2024-01-02
+```
+
 ## Validación
 
 ```bash

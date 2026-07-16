@@ -1,0 +1,89 @@
+import argparse
+import logging
+import os
+from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+
+from energy_pipeline.extract.aemet import fetch_daily_climatology
+from energy_pipeline.storage.raw import save_raw_json
+
+logger = logging.getLogger(__name__)
+
+
+def ingest_daily_climatology(
+    start_date: str,
+    end_date: str,
+    api_key: str,
+    raw_root: Path = Path("data/raw"),
+    session: requests.Session | None = None,
+) -> Path:
+    payload = fetch_daily_climatology(
+        start_date=start_date,
+        end_date=end_date,
+        api_key=api_key,
+        session=session,
+    )
+
+    destination = (
+        raw_root
+        / "aemet"
+        / "daily-climatology"
+        / f"{start_date}_{end_date}.json"
+    )
+
+    save_raw_json({"data": payload}, destination)
+
+    return destination
+
+
+def parse_args() -> argparse.Namespace:
+    load_dotenv()
+
+    parser = argparse.ArgumentParser(
+        description="Ingest AEMET daily climatology raw data.",
+    )
+    parser.add_argument(
+        "--start-date",
+        required=True,
+        help="Start date in YYYY-MM-DD format.",
+    )
+    parser.add_argument(
+        "--end-date",
+        required=True,
+        help="End date in YYYY-MM-DD format.",
+    )
+    parser.add_argument(
+        "--raw-root",
+        default=Path(os.getenv("RAW_ROOT", "data/raw")),
+        type=Path,
+        help="Root directory where raw files will be stored.",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+    )
+
+    args = parse_args()
+    api_key = os.getenv("AEMET_API_KEY")
+    if not api_key:
+        raise ValueError("AEMET_API_KEY environment variable is required")
+
+    destination = ingest_daily_climatology(
+        start_date=args.start_date,
+        end_date=args.end_date,
+        api_key=api_key,
+        raw_root=args.raw_root,
+    )
+
+    logger.info("Raw AEMET daily climatology saved to %s", destination)
+
+
+if __name__ == "__main__":
+    main()
