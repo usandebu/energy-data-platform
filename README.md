@@ -21,4 +21,32 @@ Analizar cómo influyen variables como la temperatura, el viento o las horas de 
 
 ## Estado
 
-Proyecto en fase inicial de diseño y preparación.
+Proyecto en Fase 1: ingesta local.
+
+Ya existe una primera ingesta de REE que descarga el balance eléctrico y guarda
+la respuesta original como JSON raw mediante escritura atómica.
+
+## Ejecución local
+
+```bash
+make ingest START_DATE=2024-01-01 END_DATE=2024-01-07
+```
+
+El archivo se guarda por defecto en:
+
+```text
+data/raw/ree/balance-electrico/2024-01-01_2024-01-07.json
+```
+
+También se puede cambiar la raíz de almacenamiento:
+
+```bash
+make ingest START_DATE=2024-01-01 END_DATE=2024-01-07 RAW_ROOT=/tmp/energy-raw
+```
+
+## Validación
+
+```bash
+make test
+make lint
+```
