@@ -31,7 +31,7 @@ def ingest_daily_climatology(
     destination = (
         raw_root
         / "aemet"
-        / "daily-climatology"
+        / "climatologia-diaria"
         / f"{start_date}_{end_date}.json"
     )
 

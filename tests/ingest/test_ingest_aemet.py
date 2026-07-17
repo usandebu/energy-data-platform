@@ -39,7 +39,7 @@ def test_ingest_daily_climatology_fetches_and_saves_raw_payload(tmp_path):
     expected_destination = (
         tmp_path
         / "aemet"
-        / "daily-climatology"
+        / "climatologia-diaria"
         / "2024-01-01_2024-01-02.json"
     )
 
@@ -50,7 +50,7 @@ def test_ingest_daily_climatology_fetches_and_saves_raw_payload(tmp_path):
 
 
 def test_main_ingests_daily_climatology_from_cli_args(monkeypatch, tmp_path, caplog):
-    destination = tmp_path / "aemet" / "daily-climatology" / "2024-01-01_2024-01-02.json"
+    destination = tmp_path / "aemet" / "climatologia-diaria" / "2024-01-01_2024-01-02.json"
     calls = []
 
     def fake_ingest_daily_climatology(start_date, end_date, api_key, raw_root):
@@ -119,7 +119,7 @@ def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
 
     def fake_ingest_daily_climatology(start_date, end_date, api_key, raw_root):
         calls.append(raw_root)
-        return tmp_path / "aemet" / "daily-climatology" / "2024-01-01_2024-01-02.json"
+        return tmp_path / "aemet" / "climatologia-diaria" / "2024-01-01_2024-01-02.json"
 
     env_raw_root = tmp_path / "env-raw"
 
@@ -148,7 +148,7 @@ def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
 
     def fake_ingest_daily_climatology(start_date, end_date, api_key, raw_root):
         calls.append(raw_root)
-        return Path("data/raw/aemet/daily-climatology/2024-01-01_2024-01-02.json")
+        return Path("data/raw/aemet/climatologia-diaria/2024-01-01_2024-01-02.json")
 
     monkeypatch.setattr(aemet, "ingest_daily_climatology", fake_ingest_daily_climatology)
     monkeypatch.setenv("AEMET_API_KEY", "fake-api-key")

@@ -60,6 +60,9 @@ Datos meteorológicos oficiales mediante AEMET OpenData.
 APIs REE / AEMET
         |
         v
+Airflow
+        |
+        v
 Ingesta Python
         |
         v
