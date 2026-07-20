@@ -97,8 +97,22 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_REGION: ${AWS_REGION:-eu-west-1}
-      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_REGION: ${AWS_REGION:-eu-south-2}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-south-2}
+
+  aws-cli:
+    image: amazon/aws-cli:2.36.2
+    profiles:
+      - infra
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-eu-south-2}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-south-2}
 
 volumes:
   postgres-db-volume:
