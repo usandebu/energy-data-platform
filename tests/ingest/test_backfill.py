@@ -18,7 +18,10 @@ def test_raw_destination_returns_ree_path(tmp_path):
         tmp_path
         / "ree"
         / "balance-electrico"
-        / "2024-01-01_2024-01-01.json"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
     )
 
 
@@ -27,7 +30,10 @@ def test_raw_destination_returns_aemet_path(tmp_path):
         tmp_path
         / "aemet"
         / "climatologia-diaria"
-        / "2024-01-01_2024-01-01.json"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
     )
 
 
@@ -123,7 +129,11 @@ def test_main_runs_backfill_for_selected_source(monkeypatch, tmp_path):
 
     def fake_build_ingest_function(source, raw_root, api_key):
         calls.append(("build", source, raw_root, api_key))
-        return lambda start_date, end_date: tmp_path / f"{start_date}_{end_date}.json"
+        return lambda start_date, end_date: backfill.raw_destination(
+            source,
+            start_date,
+            tmp_path,
+        )
 
     def fake_backfill_source(**kwargs):
         calls.append(("backfill", kwargs))

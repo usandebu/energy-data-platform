@@ -21,7 +21,7 @@ def test_ingest_energy_balance_fetches_and_saves_raw_payload(tmp_path):
 
     destination = ingest_energy_balance(
         start_date="2024-01-01",
-        end_date="2024-01-02",
+        end_date="2024-01-01",
         raw_root=tmp_path,
         session=session,
     )
@@ -30,16 +30,49 @@ def test_ingest_energy_balance_fetches_and_saves_raw_payload(tmp_path):
         tmp_path
         / "ree"
         / "balance-electrico"
-        / "2024-01-01_2024-01-02.json"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
     )
+    expected_metadata = expected_destination.with_name("metadata.json")
 
     assert destination == expected_destination
     assert json.loads(destination.read_text(encoding="utf-8")) == payload
+    assert json.loads(expected_metadata.read_text(encoding="utf-8"))["requested_date"] == (
+        "2024-01-01"
+    )
     response.raise_for_status.assert_called_once_with()
 
 
+def test_ingest_energy_balance_rejects_ranges(tmp_path):
+    session = Mock()
+
+    try:
+        ingest_energy_balance(
+            start_date="2024-01-01",
+            end_date="2024-01-02",
+            raw_root=tmp_path,
+            session=session,
+        )
+    except ValueError as error:
+        assert str(error) == "Raw REE ingestion expects a single day; use backfill for ranges"
+    else:
+        raise AssertionError("Expected ValueError")
+
+    session.get.assert_not_called()
+
+
 def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, caplog):
-    destination = tmp_path / "ree" / "balance-electrico" / "2024-01-01_2024-01-02.json"
+    destination = (
+        tmp_path
+        / "ree"
+        / "balance-electrico"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
+    )
     calls = []
 
     def fake_ingest_energy_balance(start_date, end_date, raw_root):
@@ -81,7 +114,15 @@ def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, caplog
 
 
 def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
-    destination = tmp_path / "ree" / "balance-electrico" / "2024-01-01_2024-01-02.json"
+    destination = (
+        tmp_path
+        / "ree"
+        / "balance-electrico"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
+    )
     calls = []
 
     def fake_ingest_energy_balance(start_date, end_date, raw_root):
@@ -122,7 +163,15 @@ def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
 
 
 def test_cli_raw_root_arg_has_priority_over_environment(monkeypatch, tmp_path):
-    destination = tmp_path / "ree" / "balance-electrico" / "2024-01-01_2024-01-02.json"
+    destination = (
+        tmp_path
+        / "ree"
+        / "balance-electrico"
+        / "year=2024"
+        / "month=01"
+        / "day=01"
+        / "data.json"
+    )
     calls = []
 
     def fake_ingest_energy_balance(start_date, end_date, raw_root):
@@ -157,7 +206,9 @@ def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
 
     def fake_ingest_energy_balance(start_date, end_date, raw_root):
         calls.append(raw_root)
-        return Path("data/raw/ree/balance-electrico/2024-01-01_2024-01-02.json")
+        return Path(
+            "data/raw/ree/balance-electrico/year=2024/month=01/day=01/data.json"
+        )
 
     monkeypatch.setattr(ree, "ingest_energy_balance", fake_ingest_energy_balance)
     monkeypatch.delenv("RAW_ROOT", raising=False)

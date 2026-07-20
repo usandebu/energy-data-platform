@@ -14,6 +14,7 @@ from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.ingest.aemet import ingest_daily_climatology
 from energy_pipeline.ingest.config import parse_raw_root
 from energy_pipeline.ingest.ree import ingest_energy_balance
+from energy_pipeline.storage.raw import RawObjectKey, raw_data_path
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,26 @@ def iter_days(start_date: str, end_date: str) -> Iterator[str]:
 
 
 def raw_destination(source: Source, day: str, raw_root: Path) -> Path:
+    requested_day = parse_iso_date(day, "day")
+
     if source == "ree":
-        return raw_root / "ree" / "balance-electrico" / f"{day}_{day}.json"
+        return raw_data_path(
+            raw_root,
+            RawObjectKey(
+                source="ree",
+                dataset="balance-electrico",
+                date=requested_day,
+            ),
+        )
     if source == "aemet":
-        return raw_root / "aemet" / "climatologia-diaria" / f"{day}_{day}.json"
+        return raw_data_path(
+            raw_root,
+            RawObjectKey(
+                source="aemet",
+                dataset="climatologia-diaria",
+                date=requested_day,
+            ),
+        )
 
     raise ValueError(f"Unsupported source: {source}")
 

@@ -104,13 +104,27 @@ PROJECT_HOST_ROOT=/ruta/absoluta/a/energy-data-platform
 Ingesta REE:
 
 ```bash
-uv run python -m energy_pipeline.ingest.ree --start-date 2024-01-01 --end-date 2024-01-07
+uv run python -m energy_pipeline.ingest.ree --start-date 2026-01-01 --end-date 2026-01-01
 ```
 
 Ingesta AEMET:
 
 ```bash
-uv run python -m energy_pipeline.ingest.aemet --start-date 2024-01-01 --end-date 2024-01-07
+uv run python -m energy_pipeline.ingest.aemet --start-date 2026-01-01 --end-date 2026-01-01
+```
+
+Backfill por rango:
+
+```bash
+uv run python -m energy_pipeline.ingest.backfill --source all --start-date 2026-01-01 --end-date 2026-01-07
+```
+
+Los datos raw se guardan con particiones compatibles con S3, Glue, Athena y
+Spark:
+
+```text
+data/raw/ree/balance-electrico/year=2026/month=01/day=01/data.json
+data/raw/ree/balance-electrico/year=2026/month=01/day=01/metadata.json
 ```
 
 Validación:
@@ -123,8 +137,8 @@ uv run ruff check .
 Ejecución con Docker:
 
 ```bash
-docker compose run --rm app python -m energy_pipeline.ingest.ree --start-date 2024-01-01 --end-date 2024-01-07
-docker compose run --rm app python -m energy_pipeline.ingest.aemet --start-date 2024-01-01 --end-date 2024-01-07
+docker compose run --rm app python -m energy_pipeline.ingest.ree --start-date 2026-01-01 --end-date 2026-01-01
+docker compose run --rm app python -m energy_pipeline.ingest.aemet --start-date 2026-01-01 --end-date 2026-01-01
 ```
 
 Validación con Docker:

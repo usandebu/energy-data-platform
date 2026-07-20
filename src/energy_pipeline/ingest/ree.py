@@ -6,10 +6,11 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from energy_pipeline.extract.dates import parse_iso_date, validate_date_range
 from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.ree import fetch_energy_balance
 from energy_pipeline.ingest.config import parse_raw_root
-from energy_pipeline.storage.raw import save_raw_json
+from energy_pipeline.storage.raw import RawObjectKey, save_raw_object
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +21,31 @@ def ingest_energy_balance(
     raw_root: Path = Path("data/raw"),
     session: requests.Session | None = None,
 ) -> Path:
+    requested_day = _parse_single_day(start_date, end_date)
     payload = fetch_energy_balance(
         start_date=start_date,
         end_date=end_date,
         session=session,
     )
 
-    destination = (
-        raw_root
-        / "ree"
-        / "balance-electrico"
-        / f"{start_date}_{end_date}.json"
+    return save_raw_object(
+        payload=payload,
+        key=RawObjectKey(
+            source="ree",
+            dataset="balance-electrico",
+            date=requested_day,
+        ),
+        raw_root=raw_root,
     )
 
-    save_raw_json(payload, destination)
 
-    return destination
+def _parse_single_day(start_date: str, end_date: str):
+    validate_date_range(start_date, end_date)
+
+    if start_date != end_date:
+        raise ValueError("Raw REE ingestion expects a single day; use backfill for ranges")
+
+    return parse_iso_date(start_date, "start_date")
 
 
 def parse_args() -> argparse.Namespace:
