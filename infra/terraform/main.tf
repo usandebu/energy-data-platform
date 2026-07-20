@@ -43,3 +43,19 @@ resource "aws_s3_bucket_ownership_controls" "raw" {
     object_ownership = "BucketOwnerPreferred"
   }
 }
+
+# Lifecycle for S3 Bucket
+resource "aws_s3_bucket_lifecycle_configuration" "raw" {
+  bucket = aws_s3_bucket.raw.id
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+}
