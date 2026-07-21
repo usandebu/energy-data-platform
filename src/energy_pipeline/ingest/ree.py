@@ -9,8 +9,13 @@ from dotenv import load_dotenv
 from energy_pipeline.extract.dates import parse_iso_date, validate_date_range
 from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.extract.ree import fetch_energy_balance
-from energy_pipeline.ingest.config import parse_raw_root
+from energy_pipeline.ingest.config import (
+    parse_raw_bucket,
+    parse_raw_root,
+    parse_raw_storage_backend,
+)
 from energy_pipeline.storage.base import RawStorage
+from energy_pipeline.storage.factory import build_raw_storage
 from energy_pipeline.storage.local import LocalRawStorage
 from energy_pipeline.storage.raw import RawObjectKey
 
@@ -73,8 +78,23 @@ def parse_args() -> argparse.Namespace:
         type=parse_raw_root,
         help="Root directory where raw files will be stored.",
     )
+    parser.add_argument(
+        "--raw-storage-backend",
+        default=parse_raw_storage_backend(os.getenv("RAW_STORAGE_BACKEND", "local")),
+        type=parse_raw_storage_backend,
+        choices=["local", "s3"],
+        help="Raw storage backend.",
+    )
+    parser.add_argument(
+        "--raw-bucket",
+        default=os.getenv("RAW_BUCKET"),
+        help="S3 bucket used when --raw-storage-backend=s3.",
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.raw_bucket = parse_raw_bucket(args.raw_bucket, args.raw_storage_backend)
+
+    return args
 
 
 def run() -> int:
@@ -85,10 +105,16 @@ def run() -> int:
 
     try:
         args = parse_args()
+        storage = build_raw_storage(
+            backend=args.raw_storage_backend,
+            raw_root=args.raw_root,
+            raw_bucket=args.raw_bucket,
+        )
         destination = ingest_energy_balance(
             start_date=args.start_date,
             end_date=args.end_date,
             raw_root=args.raw_root,
+            storage=storage,
         )
     except (ExtractionError, ValueError) as error:
         logger.error("%s", error)

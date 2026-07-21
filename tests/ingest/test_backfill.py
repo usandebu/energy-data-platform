@@ -127,6 +127,10 @@ def test_build_ingest_function_requires_aemet_api_key(tmp_path):
 def test_backfill_source_uses_storage_to_skip_existing_objects(tmp_path):
     storage = Mock()
     storage.exists.return_value = True
+    storage.data_uri.return_value = (
+        "s3://energy-data-platform-dev-raw/"
+        "ree/balance-electrico/year=2024/month=01/day=01/data.json"
+    )
     calls = []
 
     def fake_ingest(start_date, end_date):
@@ -147,12 +151,15 @@ def test_backfill_source_uses_storage_to_skip_existing_objects(tmp_path):
     storage.exists.assert_called_once_with(
         backfill.raw_object_key("ree", "2024-01-01")
     )
+    storage.data_uri.assert_called_once_with(
+        backfill.raw_object_key("ree", "2024-01-01")
+    )
 
 
 def test_main_runs_backfill_for_selected_source(monkeypatch, tmp_path):
     calls = []
 
-    def fake_build_ingest_function(source, raw_root, api_key):
+    def fake_build_ingest_function(source, raw_root, api_key, **kwargs):
         calls.append(("build", source, raw_root, api_key))
         return lambda start_date, end_date: backfill.raw_destination(
             source,

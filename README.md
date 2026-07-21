@@ -127,6 +127,21 @@ data/raw/ree/balance-electrico/year=2026/month=01/day=01/data.json
 data/raw/ree/balance-electrico/year=2026/month=01/day=01/metadata.json
 ```
 
+Por defecto el backend raw es local. Para escribir en S3, el bucket debe existir
+y las credenciales AWS deben estar disponibles en el entorno:
+
+```env
+RAW_STORAGE_BACKEND=s3
+RAW_BUCKET=energy-data-platform-dev-raw
+AWS_REGION=eu-west-1
+```
+
+La estructura de keys en S3 mantiene el mismo particionado:
+
+```text
+s3://energy-data-platform-dev-raw/ree/balance-electrico/year=2026/month=01/day=01/data.json
+```
+
 Validación:
 
 ```bash

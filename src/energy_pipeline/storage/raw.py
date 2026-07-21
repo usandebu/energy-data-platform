@@ -22,12 +22,29 @@ def raw_object_directory(raw_root: Path, key: RawObjectKey) -> Path:
     )
 
 
+def raw_object_prefix(key: RawObjectKey) -> str:
+    return (
+        f"{key.source}/{key.dataset}/"
+        f"year={key.date:%Y}/"
+        f"month={key.date:%m}/"
+        f"day={key.date:%d}"
+    )
+
+
 def raw_data_path(raw_root: Path, key: RawObjectKey) -> Path:
     return raw_object_directory(raw_root, key) / "data.json"
 
 
 def raw_metadata_path(raw_root: Path, key: RawObjectKey) -> Path:
     return raw_object_directory(raw_root, key) / "metadata.json"
+
+
+def raw_data_key(key: RawObjectKey) -> str:
+    return f"{raw_object_prefix(key)}/data.json"
+
+
+def raw_metadata_key(key: RawObjectKey) -> str:
+    return f"{raw_object_prefix(key)}/metadata.json"
 
 
 def save_raw_json(payload: dict, destination: Path) -> None:

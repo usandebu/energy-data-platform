@@ -9,3 +9,6 @@ class RawStorage(Protocol):
 
     def save_object(self, payload: dict, key: RawObjectKey) -> str:
         ...
+
+    def data_uri(self, key: RawObjectKey) -> str:
+        ...

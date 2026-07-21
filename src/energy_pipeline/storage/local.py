@@ -18,3 +18,6 @@ class LocalRawStorage:
                 raw_root=self.raw_root,
             )
         )
+
+    def data_uri(self, key: RawObjectKey) -> str:
+        return str(raw_data_path(self.raw_root, key))

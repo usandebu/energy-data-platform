@@ -7,7 +7,7 @@ variable "project_name" {
 variable "aws_region" {
   description = "Project Region"
   type        = string
-  default     = "eu-south-2"
+  default     = "eu-west-1"
 }
 
 variable "environment" {

@@ -8,8 +8,11 @@ from energy_pipeline.storage.local import LocalRawStorage
 from energy_pipeline.storage.raw import (
     RawObjectKey,
     raw_data_path,
+    raw_data_key,
     raw_metadata_path,
+    raw_metadata_key,
     raw_object_directory,
+    raw_object_prefix,
     save_raw_json,
     save_raw_object,
 )
@@ -41,6 +44,24 @@ def test_raw_data_and_metadata_paths_use_standard_file_names(tmp_path):
 
     assert raw_data_path(tmp_path, key).name == "data.json"
     assert raw_metadata_path(tmp_path, key).name == "metadata.json"
+
+
+def test_raw_s3_keys_use_partitioned_layout():
+    key = RawObjectKey(
+        source="ree",
+        dataset="balance-electrico",
+        date=date(2024, 1, 2),
+    )
+
+    assert raw_object_prefix(key) == (
+        "ree/balance-electrico/year=2024/month=01/day=02"
+    )
+    assert raw_data_key(key) == (
+        "ree/balance-electrico/year=2024/month=01/day=02/data.json"
+    )
+    assert raw_metadata_key(key) == (
+        "ree/balance-electrico/year=2024/month=01/day=02/metadata.json"
+    )
 
 
 def test_save_raw_json_creates_directories_and_file(tmp_path):
@@ -137,5 +158,6 @@ def test_local_raw_storage_saves_object_and_checks_existence(tmp_path):
     destination = storage.save_object(payload, key)
 
     assert destination == str(raw_data_path(tmp_path, key))
+    assert storage.data_uri(key) == str(raw_data_path(tmp_path, key))
     assert storage.exists(key) is True
     assert json.loads(raw_data_path(tmp_path, key).read_text(encoding="utf-8")) == payload

@@ -12,9 +12,14 @@ from dotenv import load_dotenv
 from energy_pipeline.extract.dates import parse_iso_date, validate_date_range
 from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.ingest.aemet import ingest_daily_climatology
-from energy_pipeline.ingest.config import parse_raw_root
+from energy_pipeline.ingest.config import (
+    parse_raw_bucket,
+    parse_raw_root,
+    parse_raw_storage_backend,
+)
 from energy_pipeline.ingest.ree import ingest_energy_balance
 from energy_pipeline.storage.base import RawStorage
+from energy_pipeline.storage.factory import build_raw_storage
 from energy_pipeline.storage.local import LocalRawStorage
 from energy_pipeline.storage.raw import RawObjectKey, raw_data_path
 
@@ -75,9 +80,13 @@ def resolve_sources(source: Source) -> list[Source]:
     raise ValueError(f"Unsupported source: {source}")
 
 
-def build_ingest_function(source: Source, raw_root: Path, api_key: str | None) -> IngestFunction:
-    storage = LocalRawStorage(raw_root)
-
+def build_ingest_function(
+    source: Source,
+    raw_root: Path,
+    api_key: str | None,
+    storage: RawStorage | None = None,
+) -> IngestFunction:
+    storage = storage or LocalRawStorage(raw_root)
     if source == "ree":
         return lambda start_date, end_date: ingest_energy_balance(
             start_date=start_date,
@@ -122,8 +131,12 @@ def backfill_source(
 
         if skip_existing and storage.exists(key):
             skipped += 1
-            destination = raw_destination(source, day, raw_root)
-            logger.info("[%s] Skipping existing raw file for %s: %s", source, day, destination)
+            logger.info(
+                "[%s] Skipping existing raw file for %s: %s",
+                source,
+                day,
+                storage.data_uri(key),
+            )
             continue
 
         try:
@@ -179,6 +192,18 @@ def parse_args() -> argparse.Namespace:
         help="Root directory where raw files will be stored.",
     )
     parser.add_argument(
+        "--raw-storage-backend",
+        default=parse_raw_storage_backend(os.getenv("RAW_STORAGE_BACKEND", "local")),
+        type=parse_raw_storage_backend,
+        choices=["local", "s3"],
+        help="Raw storage backend.",
+    )
+    parser.add_argument(
+        "--raw-bucket",
+        default=os.getenv("RAW_BUCKET"),
+        help="S3 bucket used when --raw-storage-backend=s3.",
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Download files even when the destination already exists.",
@@ -195,7 +220,10 @@ def parse_args() -> argparse.Namespace:
         help="Seconds to wait between API calls.",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.raw_bucket = parse_raw_bucket(args.raw_bucket, args.raw_storage_backend)
+
+    return args
 
 
 def run() -> int:
@@ -207,6 +235,11 @@ def run() -> int:
     try:
         args = parse_args()
         validate_date_range(args.start_date, args.end_date)
+        storage = build_raw_storage(
+            backend=args.raw_storage_backend,
+            raw_root=args.raw_root,
+            raw_bucket=args.raw_bucket,
+        )
 
         results = []
         for source in resolve_sources(args.source):
@@ -214,6 +247,7 @@ def run() -> int:
                 source=source,
                 raw_root=args.raw_root,
                 api_key=os.getenv("AEMET_API_KEY"),
+                storage=storage,
             )
             results.append(
                 backfill_source(
@@ -222,6 +256,7 @@ def run() -> int:
                     end_date=args.end_date,
                     raw_root=args.raw_root,
                     ingest=ingest,
+                    storage=storage,
                     skip_existing=not args.overwrite,
                     continue_on_error=not args.fail_fast,
                     sleep_seconds=args.sleep_seconds,

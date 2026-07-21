@@ -75,7 +75,7 @@ def test_main_ingests_energy_balance_from_cli_args(monkeypatch, tmp_path, caplog
     )
     calls = []
 
-    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root, **kwargs):
         calls.append(
             {
                 "start_date": start_date,
@@ -125,7 +125,7 @@ def test_main_uses_raw_root_from_environment(monkeypatch, tmp_path):
     )
     calls = []
 
-    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root, **kwargs):
         calls.append(
             {
                 "start_date": start_date,
@@ -174,7 +174,7 @@ def test_cli_raw_root_arg_has_priority_over_environment(monkeypatch, tmp_path):
     )
     calls = []
 
-    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root, **kwargs):
         calls.append(raw_root)
         return destination
 
@@ -204,7 +204,7 @@ def test_cli_raw_root_arg_has_priority_over_environment(monkeypatch, tmp_path):
 def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
     calls = []
 
-    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root, **kwargs):
         calls.append(raw_root)
         return Path(
             "data/raw/ree/balance-electrico/year=2024/month=01/day=01/data.json"
@@ -230,7 +230,7 @@ def test_main_uses_default_raw_root_without_cli_arg_or_environment(monkeypatch):
 
 
 def test_run_logs_value_error_and_returns_failure(monkeypatch, caplog):
-    def fake_ingest_energy_balance(start_date, end_date, raw_root):
+    def fake_ingest_energy_balance(start_date, end_date, raw_root, **kwargs):
         raise ValueError("start_date must be before or equal to end_date")
 
     monkeypatch.setattr(ree, "ingest_energy_balance", fake_ingest_energy_balance)
