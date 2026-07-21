@@ -11,7 +11,7 @@ DOCKER_URL = "unix://var/run/docker.sock"
 NETWORK_MODE = "energy-data-platform_default"
 PROJECT_HOST_ROOT = os.environ.get("PROJECT_HOST_ROOT")
 DEFAULT_RAW_BUCKET = os.environ.get("RAW_BUCKET", "energy-data-platform-dev-raw")
-DEFAULT_AWS_REGION = os.environ.get("AWS_REGION", "eu-south-2")
+DEFAULT_AWS_REGION = os.environ.get("AWS_REGION", "eu-west-1")
 RAW_BUCKET_ARG = "{{ dag_run.conf.get('raw_bucket', '" + DEFAULT_RAW_BUCKET + "') }}"
 AWS_ENVIRONMENT = {
     key: value

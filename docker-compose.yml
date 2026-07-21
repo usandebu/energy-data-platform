@@ -16,8 +16,8 @@ x-airflow-common: &airflow-common
     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-    AWS_REGION: ${AWS_REGION:-eu-south-2}
-    AWS_DEFAULT_REGION: ${AWS_REGION:-eu-south-2}
+    AWS_REGION: ${AWS_REGION:-eu-west-1}
+    AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
     RAW_BUCKET: ${RAW_BUCKET:-energy-data-platform-dev-raw}
   volumes:
     - ./:/opt/airflow/project
