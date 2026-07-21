@@ -120,5 +120,21 @@ services:
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
 
+  dbt:
+    image: energy-data-platform-dbt
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+    profiles:
+      - analytics
+    working_dir: /workspace/dbt/energy_platform
+    volumes:
+      - ./:/workspace
+    environment:
+      DATABRICKS_HOST: ${DATABRICKS_HOST:-}
+      DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:-}
+      DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
+      DBT_PROFILES_DIR: /workspace/dbt
+
 volumes:
   postgres-db-volume:

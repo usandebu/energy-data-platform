@@ -1,0 +1,33 @@
+sources:
+  - name: silver
+    catalog: energy_platform
+    schema: silver
+    tables:
+      - name: dim_tecnologia_energia
+        columns:
+          - name: tecnologia_id
+            tests:
+              - not_null
+              - unique
+      - name: fct_generacion_energia_diaria
+        columns:
+          - name: fecha
+            tests:
+              - not_null
+          - name: tecnologia_id
+            tests:
+              - not_null
+      - name: dim_estacion_meteorologica
+        columns:
+          - name: estacion_id
+            tests:
+              - not_null
+              - unique
+      - name: fct_climatologia_diaria
+        columns:
+          - name: fecha
+            tests:
+              - not_null
+          - name: estacion_id
+            tests:
+              - not_null

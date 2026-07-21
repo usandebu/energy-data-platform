@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: mart_energia_clima_diario
+    description: "Mart diaria que cruza generación eléctrica de REE con climatología agregada de AEMET."
+    columns:
+      - name: fecha
+        description: "Fecha diaria común entre REE y AEMET."
+        tests:
+          - not_null
+          - unique
+
+      - name: generacion_pura_mwh
+        description: "Generación eléctrica diaria de tecnologías renovables y no renovables, excluyendo almacenamiento e intercambios."
+        tests:
+          - not_null
+
+      - name: generacion_renovable_mwh
+        tests:
+          - not_null
+
+      - name: generacion_no_renovable_mwh
+        tests:
+          - not_null
+
+      - name: porcentaje_renovable
+        description: "Ratio entre generación renovable y generación pura."
+        tests:
+          - not_null
+
+      - name: temperatura_media_espana_c
+        tests:
+          - not_null
+
+      - name: num_estaciones
+        tests:
+          - not_null
