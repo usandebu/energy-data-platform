@@ -133,13 +133,41 @@ y las credenciales AWS deben estar disponibles en el entorno:
 ```env
 RAW_STORAGE_BACKEND=s3
 RAW_BUCKET=energy-data-platform-dev-raw
-AWS_REGION=eu-west-1
+AWS_REGION=eu-south-2
 ```
 
 La estructura de keys en S3 mantiene el mismo particionado:
 
 ```text
 s3://energy-data-platform-dev-raw/ree/balance-electrico/year=2026/month=01/day=01/data.json
+```
+
+Ejemplo de backfill hacia S3:
+
+```bash
+uv run python -m energy_pipeline.ingest.backfill \
+  --source all \
+  --start-date 2026-07-02 \
+  --end-date 2026-07-03 \
+  --raw-storage-backend s3 \
+  --raw-bucket energy-data-platform-dev-raw
+```
+
+Airflow incluye un DAG manual para backfills raw hacia S3:
+
+```text
+energy_raw_backfill_s3
+```
+
+Ejemplo de configuración al dispararlo manualmente:
+
+```json
+{
+  "source": "all",
+  "start_date": "2026-07-02",
+  "end_date": "2026-07-03",
+  "raw_bucket": "energy-data-platform-dev-raw"
+}
 ```
 
 Validación:
