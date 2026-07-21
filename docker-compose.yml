@@ -19,6 +19,9 @@ x-airflow-common: &airflow-common
     AWS_REGION: ${AWS_REGION:-eu-west-1}
     AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
     RAW_BUCKET: ${RAW_BUCKET:-energy-data-platform-dev-raw}
+    DATABRICKS_HOST: ${DATABRICKS_HOST:-}
+    DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:-}
+    DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
   volumes:
     - ./:/opt/airflow/project
     - ./airflow/dags:/opt/airflow/dags
