@@ -47,8 +47,8 @@ def test_ingest_daily_climatology_fetches_and_saves_raw_payload(tmp_path):
     )
     expected_metadata = expected_destination.with_name("metadata.json")
 
-    assert destination == expected_destination
-    assert json.loads(destination.read_text(encoding="utf-8")) == {"data": payload}
+    assert destination == str(expected_destination)
+    assert json.loads(expected_destination.read_text(encoding="utf-8")) == {"data": payload}
     assert json.loads(expected_metadata.read_text(encoding="utf-8"))["requested_date"] == (
         "2024-01-01"
     )

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from energy_pipeline.storage.local import LocalRawStorage
 from energy_pipeline.storage.raw import (
     RawObjectKey,
     raw_data_path,
@@ -120,3 +121,21 @@ def test_save_raw_object_writes_data_and_metadata(tmp_path):
             json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
         ),
     }
+
+
+def test_local_raw_storage_saves_object_and_checks_existence(tmp_path):
+    payload = {"data": {"type": "Balance de energía eléctrica"}, "included": []}
+    key = RawObjectKey(
+        source="ree",
+        dataset="balance-electrico",
+        date=date(2024, 1, 1),
+    )
+    storage = LocalRawStorage(tmp_path)
+
+    assert storage.exists(key) is False
+
+    destination = storage.save_object(payload, key)
+
+    assert destination == str(raw_data_path(tmp_path, key))
+    assert storage.exists(key) is True
+    assert json.loads(raw_data_path(tmp_path, key).read_text(encoding="utf-8")) == payload

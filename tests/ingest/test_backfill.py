@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+from unittest.mock import Mock
 
 from energy_pipeline.ingest import backfill
 from energy_pipeline.ingest.backfill import BackfillResult
@@ -45,7 +45,7 @@ def test_backfill_source_downloads_each_missing_day(tmp_path):
         destination = backfill.raw_destination("ree", start_date, tmp_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text("{}", encoding="utf-8")
-        return destination
+        return str(destination)
 
     result = backfill.backfill_source(
         source="ree",
@@ -71,7 +71,7 @@ def test_backfill_source_skips_existing_files(tmp_path):
 
     def fake_ingest(start_date, end_date):
         calls.append((start_date, end_date))
-        return Path("unused")
+        return "unused"
 
     result = backfill.backfill_source(
         source="ree",
@@ -96,7 +96,7 @@ def test_backfill_source_continues_after_error_by_default(tmp_path, caplog):
         destination = backfill.raw_destination("ree", start_date, tmp_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text("{}", encoding="utf-8")
-        return destination
+        return str(destination)
 
     with caplog.at_level(logging.ERROR, logger=backfill.logger.name):
         result = backfill.backfill_source(
@@ -124,6 +124,31 @@ def test_build_ingest_function_requires_aemet_api_key(tmp_path):
         raise AssertionError("Expected ValueError")
 
 
+def test_backfill_source_uses_storage_to_skip_existing_objects(tmp_path):
+    storage = Mock()
+    storage.exists.return_value = True
+    calls = []
+
+    def fake_ingest(start_date, end_date):
+        calls.append((start_date, end_date))
+        return "unused"
+
+    result = backfill.backfill_source(
+        source="ree",
+        start_date="2024-01-01",
+        end_date="2024-01-01",
+        raw_root=tmp_path,
+        ingest=fake_ingest,
+        storage=storage,
+    )
+
+    assert calls == []
+    assert result == BackfillResult(source="ree", downloaded=0, skipped=1, failed=0)
+    storage.exists.assert_called_once_with(
+        backfill.raw_object_key("ree", "2024-01-01")
+    )
+
+
 def test_main_runs_backfill_for_selected_source(monkeypatch, tmp_path):
     calls = []
 
@@ -133,7 +158,7 @@ def test_main_runs_backfill_for_selected_source(monkeypatch, tmp_path):
             source,
             start_date,
             tmp_path,
-        )
+        ).as_posix()
 
     def fake_backfill_source(**kwargs):
         calls.append(("backfill", kwargs))

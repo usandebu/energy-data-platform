@@ -14,12 +14,14 @@ from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.ingest.aemet import ingest_daily_climatology
 from energy_pipeline.ingest.config import parse_raw_root
 from energy_pipeline.ingest.ree import ingest_energy_balance
+from energy_pipeline.storage.base import RawStorage
+from energy_pipeline.storage.local import LocalRawStorage
 from energy_pipeline.storage.raw import RawObjectKey, raw_data_path
 
 logger = logging.getLogger(__name__)
 
 Source = str
-IngestFunction = Callable[[str, str], Path]
+IngestFunction = Callable[[str, str], str]
 
 
 @dataclass(frozen=True)
@@ -42,25 +44,23 @@ def iter_days(start_date: str, end_date: str) -> Iterator[str]:
 
 
 def raw_destination(source: Source, day: str, raw_root: Path) -> Path:
+    return raw_data_path(raw_root, raw_object_key(source, day))
+
+
+def raw_object_key(source: Source, day: str) -> RawObjectKey:
     requested_day = parse_iso_date(day, "day")
 
     if source == "ree":
-        return raw_data_path(
-            raw_root,
-            RawObjectKey(
-                source="ree",
-                dataset="balance-electrico",
-                date=requested_day,
-            ),
+        return RawObjectKey(
+            source="ree",
+            dataset="balance-electrico",
+            date=requested_day,
         )
     if source == "aemet":
-        return raw_data_path(
-            raw_root,
-            RawObjectKey(
-                source="aemet",
-                dataset="climatologia-diaria",
-                date=requested_day,
-            ),
+        return RawObjectKey(
+            source="aemet",
+            dataset="climatologia-diaria",
+            date=requested_day,
         )
 
     raise ValueError(f"Unsupported source: {source}")
@@ -76,11 +76,14 @@ def resolve_sources(source: Source) -> list[Source]:
 
 
 def build_ingest_function(source: Source, raw_root: Path, api_key: str | None) -> IngestFunction:
+    storage = LocalRawStorage(raw_root)
+
     if source == "ree":
         return lambda start_date, end_date: ingest_energy_balance(
             start_date=start_date,
             end_date=end_date,
             raw_root=raw_root,
+            storage=storage,
         )
 
     if source == "aemet":
@@ -92,6 +95,7 @@ def build_ingest_function(source: Source, raw_root: Path, api_key: str | None) -
             end_date=end_date,
             api_key=api_key,
             raw_root=raw_root,
+            storage=storage,
         )
 
     raise ValueError(f"Unsupported source: {source}")
@@ -103,19 +107,22 @@ def backfill_source(
     end_date: str,
     raw_root: Path,
     ingest: IngestFunction,
+    storage: RawStorage | None = None,
     skip_existing: bool = True,
     continue_on_error: bool = True,
     sleep_seconds: float = 0.0,
 ) -> BackfillResult:
+    storage = storage or LocalRawStorage(raw_root)
     downloaded = 0
     skipped = 0
     failed = 0
 
     for day in iter_days(start_date, end_date):
-        destination = raw_destination(source, day, raw_root)
+        key = raw_object_key(source, day)
 
-        if skip_existing and destination.exists():
+        if skip_existing and storage.exists(key):
             skipped += 1
+            destination = raw_destination(source, day, raw_root)
             logger.info("[%s] Skipping existing raw file for %s: %s", source, day, destination)
             continue
 

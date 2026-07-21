@@ -6,11 +6,13 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from energy_pipeline.extract.dates import parse_iso_date, validate_date_range
 from energy_pipeline.extract.aemet import fetch_daily_climatology
+from energy_pipeline.extract.dates import parse_iso_date, validate_date_range
 from energy_pipeline.extract.errors import ExtractionError
 from energy_pipeline.ingest.config import parse_raw_root
-from energy_pipeline.storage.raw import RawObjectKey, save_raw_object
+from energy_pipeline.storage.base import RawStorage
+from energy_pipeline.storage.local import LocalRawStorage
+from energy_pipeline.storage.raw import RawObjectKey
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,8 @@ def ingest_daily_climatology(
     api_key: str,
     raw_root: Path = Path("data/raw"),
     session: requests.Session | None = None,
-) -> Path:
+    storage: RawStorage | None = None,
+) -> str:
     requested_day = _parse_single_day(start_date, end_date)
     payload = fetch_daily_climatology(
         start_date=start_date,
@@ -29,15 +32,15 @@ def ingest_daily_climatology(
         api_key=api_key,
         session=session,
     )
+    storage = storage or LocalRawStorage(raw_root)
 
-    return save_raw_object(
+    return storage.save_object(
         payload={"data": payload},
         key=RawObjectKey(
             source="aemet",
             dataset="climatologia-diaria",
             date=requested_day,
         ),
-        raw_root=raw_root,
     )
 
 
