@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 
 from airflow import DAG
+from airflow.providers.databricks.operators.databricks import DatabricksRunNowOperator
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 
@@ -10,6 +11,7 @@ DBT_IMAGE = "energy-data-platform-dbt"
 DOCKER_URL = "unix://var/run/docker.sock"
 NETWORK_MODE = "energy-data-platform_default"
 PROJECT_HOST_ROOT = os.environ.get("PROJECT_HOST_ROOT")
+BRONZE_SILVER_JOB_ID = int(os.environ.get("DATABRICKS_BRONZE_SILVER_JOB_ID", "12771119794981"))
 
 DBT_ENVIRONMENT = {
     key: value
@@ -37,8 +39,14 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
-    tags=["energy", "dbt", "databricks", "gold"],
+    tags=["energy", "databricks", "dbt", "gold"],
 ) as dag:
+    run_bronze_silver_job = DatabricksRunNowOperator(
+        task_id="run_bronze_silver_job",
+        databricks_conn_id="databricks_default",
+        job_id=BRONZE_SILVER_JOB_ID,
+    )
+
     dbt_build = DockerOperator(
         task_id="dbt_build",
         image=DBT_IMAGE,
@@ -51,3 +59,5 @@ with DAG(
         working_dir="/workspace/dbt/energy_platform",
         environment=DBT_ENVIRONMENT,
     )
+
+    run_bronze_silver_job >> dbt_build
