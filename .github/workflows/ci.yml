@@ -1,0 +1,46 @@
+name: Integración continua
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checks:
+    name: Validaciones
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar uv
+        run: python -m pip install uv
+
+      - name: Instalar dependencias Python
+        run: uv sync --dev
+
+      - name: Ejecutar ruff
+        run: uv run ruff check src tests airflow/dags
+
+      - name: Ejecutar pytest
+        run: uv run pytest -q tests
+
+      - name: Instalar dbt Databricks
+        run: python -m pip install "dbt-databricks>=1.12.0,<1.13.0"
+
+      - name: Validar proyecto dbt
+        working-directory: dbt/energy_platform
+        env:
+          DATABRICKS_HOST: "https://example.cloud.databricks.com"
+          DATABRICKS_HTTP_PATH: "/sql/example"
+          DATABRICKS_TOKEN: "example-token"
+        run: dbt parse --profiles-dir ../ci

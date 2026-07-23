@@ -189,6 +189,12 @@ Airflow
   -> dbt Gold/tests
 ```
 
+La integración continua con GitHub Actions está documentada en:
+
+```text
+docs/integracion-continua.md
+```
+
 Validación:
 
 ```bash
