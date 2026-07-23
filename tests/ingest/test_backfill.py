@@ -128,7 +128,7 @@ def test_backfill_source_uses_storage_to_skip_existing_objects(tmp_path):
     storage = Mock()
     storage.exists.return_value = True
     storage.data_uri.return_value = (
-        "s3://energy-data-platform-dev-raw/"
+        "s3://test-raw-bucket/"
         "ree/balance-electrico/year=2024/month=01/day=01/data.json"
     )
     calls = []

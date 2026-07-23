@@ -19,11 +19,11 @@ def test_build_raw_storage_returns_s3_storage(tmp_path):
     storage = build_raw_storage(
         backend="s3",
         raw_root=tmp_path,
-        raw_bucket="energy-data-platform-dev-raw",
+        raw_bucket="test-raw-bucket",
     )
 
     assert isinstance(storage, S3RawStorage)
-    assert storage.bucket == "energy-data-platform-dev-raw"
+    assert storage.bucket == "test-raw-bucket"
 
 
 def test_build_raw_storage_requires_bucket_for_s3(tmp_path):

@@ -16,12 +16,12 @@ def test_s3_raw_storage_checks_data_object_existence():
         dataset="balance-electrico",
         date=date(2024, 1, 2),
     )
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     assert storage.exists(key) is True
 
     client.head_object.assert_called_once_with(
-        Bucket="energy-data-platform-dev-raw",
+        Bucket="test-raw-bucket",
         Key="ree/balance-electrico/year=2024/month=01/day=02/data.json",
     )
 
@@ -42,7 +42,7 @@ def test_s3_raw_storage_returns_false_when_data_object_does_not_exist():
         dataset="climatologia-diaria",
         date=date(2024, 1, 2),
     )
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     assert storage.exists(key) is False
 
@@ -63,7 +63,7 @@ def test_s3_raw_storage_reraises_unexpected_client_errors():
         dataset="balance-electrico",
         date=date(2024, 1, 2),
     )
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     with pytest.raises(ClientError):
         storage.exists(key)
@@ -80,25 +80,25 @@ def test_s3_raw_storage_saves_data_and_metadata_objects():
         dataset="balance-electrico",
         date=date(2024, 1, 2),
     )
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     destination = storage.save_object(payload, key)
 
     assert destination == (
-        "s3://energy-data-platform-dev-raw/"
+        "s3://test-raw-bucket/"
         "ree/balance-electrico/year=2024/month=01/day=02/data.json"
     )
     assert storage.data_uri(key) == destination
     data_call, metadata_call = client.put_object.call_args_list
 
     assert data_call.kwargs == {
-        "Bucket": "energy-data-platform-dev-raw",
+        "Bucket": "test-raw-bucket",
         "Key": "ree/balance-electrico/year=2024/month=01/day=02/data.json",
         "Body": json.dumps(payload, ensure_ascii=False, indent=2),
         "ContentType": "application/json",
     }
 
-    assert metadata_call.kwargs["Bucket"] == "energy-data-platform-dev-raw"
+    assert metadata_call.kwargs["Bucket"] == "test-raw-bucket"
     assert metadata_call.kwargs["Key"] == (
         "ree/balance-electrico/year=2024/month=01/day=02/metadata.json"
     )
@@ -147,12 +147,12 @@ def test_s3_raw_storage_returns_latest_date():
         },
     ]
     client.get_paginator.return_value = paginator
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     assert storage.latest_date("ree", "balance-electrico") == date(2024, 1, 5)
     client.get_paginator.assert_called_once_with("list_objects_v2")
     paginator.paginate.assert_called_once_with(
-        Bucket="energy-data-platform-dev-raw",
+        Bucket="test-raw-bucket",
         Prefix="ree/balance-electrico/",
     )
 
@@ -162,6 +162,6 @@ def test_s3_raw_storage_returns_none_when_no_raw_data_objects_exist():
     paginator = Mock()
     paginator.paginate.return_value = [{"Contents": []}]
     client.get_paginator.return_value = paginator
-    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+    storage = S3RawStorage(bucket="test-raw-bucket", client=client)
 
     assert storage.latest_date("aemet", "climatologia-diaria") is None

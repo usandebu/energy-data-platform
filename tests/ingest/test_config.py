@@ -41,6 +41,6 @@ def test_parse_raw_bucket_requires_bucket_for_s3_backend():
 
 
 def test_parse_raw_bucket_returns_bucket_for_s3_backend():
-    assert parse_raw_bucket(" energy-data-platform-dev-raw ", "s3") == (
-        "energy-data-platform-dev-raw"
+    assert parse_raw_bucket(" test-raw-bucket ", "s3") == (
+        "test-raw-bucket"
     )

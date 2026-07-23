@@ -1,7 +1,25 @@
 # Databricks notebook source
 from pyspark.sql import functions as F
 
-sample_aemet_path = "s3://energy-data-platform-dev-raw/aemet/climatologia-diaria/year=2026/month=07/day=01/data.json"
+dbutils.widgets.text("raw_bucket", "")
+dbutils.widgets.text("sample_date", "2026-07-01")
+
+
+def required_widget(name: str) -> str:
+    value = dbutils.widgets.get(name).strip()
+    if not value:
+        raise ValueError(f"{name} is required")
+    return value
+
+
+raw_bucket = required_widget("raw_bucket")
+sample_date = required_widget("sample_date")
+sample_year, sample_month, sample_day = sample_date.split("-")
+
+sample_aemet_path = (
+    f"s3://{raw_bucket}/aemet/climatologia-diaria/"
+    f"year={sample_year}/month={sample_month}/day={sample_day}/data.json"
+)
 
 aemet_schema = (
     spark.read
@@ -12,7 +30,7 @@ aemet_schema = (
 
 # COMMAND ----------
 
-aemet_raw_path = "s3://energy-data-platform-dev-raw/aemet/climatologia-diaria/year=*/month=*/day=*/data.json"
+aemet_raw_path = f"s3://{raw_bucket}/aemet/climatologia-diaria/year=*/month=*/day=*/data.json"
 
 df_aemet_raw = (
     spark.read

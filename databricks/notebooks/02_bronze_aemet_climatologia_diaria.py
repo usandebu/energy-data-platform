@@ -1,5 +1,24 @@
 # Databricks notebook source
-aemet_july_path = "s3://energy-data-platform-dev-raw/aemet/climatologia-diaria/year=2026/month=07/day=*/data.json"
+dbutils.widgets.text("raw_bucket", "")
+dbutils.widgets.text("sample_year", "2026")
+dbutils.widgets.text("sample_month", "07")
+
+
+def required_widget(name: str) -> str:
+    value = dbutils.widgets.get(name).strip()
+    if not value:
+        raise ValueError(f"{name} is required")
+    return value
+
+
+raw_bucket = required_widget("raw_bucket")
+sample_year = required_widget("sample_year")
+sample_month = required_widget("sample_month")
+
+aemet_july_path = (
+    f"s3://{raw_bucket}/aemet/climatologia-diaria/"
+    f"year={sample_year}/month={sample_month}/day=*/data.json"
+)
 
 df_aemet_raw_july = (
     spark.read

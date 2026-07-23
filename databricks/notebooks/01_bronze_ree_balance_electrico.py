@@ -1,5 +1,29 @@
 # Databricks notebook source
-ree_path = "s3://energy-data-platform-dev-raw/ree/balance-electrico/year=2026/month=07/day=01/data.json"
+dbutils.widgets.text("raw_bucket", "")
+dbutils.widgets.text("sample_date", "2026-07-01")
+dbutils.widgets.text("sample_year", "2026")
+dbutils.widgets.text("sample_month", "07")
+
+
+def required_widget(name: str) -> str:
+    value = dbutils.widgets.get(name).strip()
+    if not value:
+        raise ValueError(f"{name} is required")
+    return value
+
+
+raw_bucket = required_widget("raw_bucket")
+sample_date = required_widget("sample_date")
+sample_year = required_widget("sample_year")
+sample_month = required_widget("sample_month")
+
+sample_year_from_date, sample_month_from_date, sample_day_from_date = sample_date.split("-")
+
+ree_path = (
+    f"s3://{raw_bucket}/ree/balance-electrico/"
+    f"year={sample_year_from_date}/month={sample_month_from_date}/"
+    f"day={sample_day_from_date}/data.json"
+)
 
 df_ree_raw = (
     spark.read
@@ -95,7 +119,10 @@ df_ree_bronze.select("source_file").distinct().show(truncate=False)
 
 # COMMAND ----------
 
-ree_july_path = "s3://energy-data-platform-dev-raw/ree/balance-electrico/year=2026/month=07/day=*/data.json"
+ree_july_path = (
+    f"s3://{raw_bucket}/ree/balance-electrico/"
+    f"year={sample_year}/month={sample_month}/day=*/data.json"
+)
 
 df_ree_raw_july = (
     spark.read
@@ -207,4 +234,3 @@ df_ree_bronze_july.write.mode("overwrite").saveAsTable(
 # MAGIC GROUP BY is_composite;
 
 # COMMAND ----------
-
