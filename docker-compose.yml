@@ -13,15 +13,16 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
     AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY}
-    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
     AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-    AWS_REGION: ${AWS_REGION:-eu-west-1}
-    AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
-    RAW_BUCKET: ${RAW_BUCKET:-energy-data-platform-dev-raw}
-    DATABRICKS_HOST: ${DATABRICKS_HOST:-}
-    DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:-}
-    DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
+    AWS_REGION: ${AWS_REGION:?AWS_REGION is required}
+    AWS_DEFAULT_REGION: ${AWS_REGION:?AWS_REGION is required}
+    RAW_BUCKET: ${RAW_BUCKET:?RAW_BUCKET is required}
+    DATABRICKS_HOST: ${DATABRICKS_HOST:?DATABRICKS_HOST is required}
+    DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:?DATABRICKS_HTTP_PATH is required}
+    DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:?DATABRICKS_TOKEN is required}
+    DATABRICKS_BRONZE_SILVER_JOB_ID: ${DATABRICKS_BRONZE_SILVER_JOB_ID:?DATABRICKS_BRONZE_SILVER_JOB_ID is required}
   volumes:
     - ./:/opt/airflow/project
     - ./airflow/dags:/opt/airflow/dags
@@ -46,6 +47,12 @@ services:
     init: true
     env_file:
       - .env
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is required}
+      AWS_DEFAULT_REGION: ${AWS_REGION:?AWS_REGION is required}
     volumes:
       - ./data:/app/data
     working_dir: /app
@@ -103,11 +110,11 @@ services:
     volumes:
       - ./:/workspace
     environment:
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_REGION: ${AWS_REGION:-eu-west-1}
-      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is required}
+      AWS_DEFAULT_REGION: ${AWS_REGION:?AWS_REGION is required}
 
   aws-cli:
     image: amazon/aws-cli:2.36.2
@@ -117,11 +124,11 @@ services:
     volumes:
       - ./:/workspace
     environment:
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_REGION: ${AWS_REGION:-eu-west-1}
-      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is required}
+      AWS_DEFAULT_REGION: ${AWS_REGION:?AWS_REGION is required}
 
   dbt:
     image: energy-data-platform-dbt
@@ -134,9 +141,9 @@ services:
     volumes:
       - ./:/workspace
     environment:
-      DATABRICKS_HOST: ${DATABRICKS_HOST:-}
-      DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:-}
-      DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
+      DATABRICKS_HOST: ${DATABRICKS_HOST:?DATABRICKS_HOST is required}
+      DATABRICKS_HTTP_PATH: ${DATABRICKS_HTTP_PATH:?DATABRICKS_HTTP_PATH is required}
+      DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:?DATABRICKS_TOKEN is required}
       DBT_PROFILES_DIR: /workspace/dbt
 
 volumes:

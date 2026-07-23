@@ -9,38 +9,37 @@ from docker.types import Mount
 APP_IMAGE = "energy-data-platform-app"
 DOCKER_URL = "unix://var/run/docker.sock"
 NETWORK_MODE = "energy-data-platform_default"
-PROJECT_HOST_ROOT = os.environ.get("PROJECT_HOST_ROOT")
-DEFAULT_RAW_BUCKET = os.environ.get("RAW_BUCKET", "energy-data-platform-dev-raw")
-DEFAULT_AWS_REGION = os.environ.get("AWS_REGION", "eu-west-1")
-RAW_BUCKET_ARG = "{{ dag_run.conf.get('raw_bucket', '" + DEFAULT_RAW_BUCKET + "') }}"
+
+
+def required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
+
+
+PROJECT_HOST_ROOT = required_env("PROJECT_HOST_ROOT")
+RAW_BUCKET = required_env("RAW_BUCKET")
+AWS_REGION = required_env("AWS_REGION")
+RAW_BUCKET_ARG = "{{ dag_run.conf.get('raw_bucket', '" + RAW_BUCKET + "') }}"
 AWS_ENVIRONMENT = {
     key: value
     for key, value in {
-        "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID"),
-        "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        "AWS_ACCESS_KEY_ID": required_env("AWS_ACCESS_KEY_ID"),
+        "AWS_SECRET_ACCESS_KEY": required_env("AWS_SECRET_ACCESS_KEY"),
         "AWS_SESSION_TOKEN": os.environ.get("AWS_SESSION_TOKEN"),
-        "AWS_REGION": DEFAULT_AWS_REGION,
-        "AWS_DEFAULT_REGION": DEFAULT_AWS_REGION,
+        "AWS_REGION": AWS_REGION,
+        "AWS_DEFAULT_REGION": AWS_REGION,
+        "AEMET_API_KEY": required_env("AEMET_API_KEY"),
     }.items()
     if value
 }
-
-if not PROJECT_HOST_ROOT:
-    raise RuntimeError("PROJECT_HOST_ROOT environment variable is required")
 
 DATA_MOUNT = Mount(
     source=f"{PROJECT_HOST_ROOT}/data",
     target="/app/data",
     type="bind",
 )
-
-ENV_MOUNT = Mount(
-    source=f"{PROJECT_HOST_ROOT}/.env",
-    target="/app/.env",
-    type="bind",
-    read_only=True,
-)
-
 
 with DAG(
     dag_id="energy_raw_backfill_s3",
@@ -64,6 +63,6 @@ with DAG(
         ),
         docker_url=DOCKER_URL,
         network_mode=NETWORK_MODE,
-        mounts=[DATA_MOUNT, ENV_MOUNT],
+        mounts=[DATA_MOUNT],
         environment=AWS_ENVIRONMENT,
     )

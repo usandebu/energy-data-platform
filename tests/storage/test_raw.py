@@ -161,3 +161,40 @@ def test_local_raw_storage_saves_object_and_checks_existence(tmp_path):
     assert storage.data_uri(key) == str(raw_data_path(tmp_path, key))
     assert storage.exists(key) is True
     assert json.loads(raw_data_path(tmp_path, key).read_text(encoding="utf-8")) == payload
+
+
+def test_local_raw_storage_returns_latest_date(tmp_path):
+    storage = LocalRawStorage(tmp_path)
+    payload = {"data": {}}
+
+    save_raw_object(
+        payload=payload,
+        key=RawObjectKey(
+            source="ree",
+            dataset="balance-electrico",
+            date=date(2024, 1, 2),
+        ),
+        raw_root=tmp_path,
+    )
+    save_raw_object(
+        payload=payload,
+        key=RawObjectKey(
+            source="ree",
+            dataset="balance-electrico",
+            date=date(2024, 1, 5),
+        ),
+        raw_root=tmp_path,
+    )
+    save_raw_object(
+        payload=payload,
+        key=RawObjectKey(
+            source="aemet",
+            dataset="climatologia-diaria",
+            date=date(2024, 1, 7),
+        ),
+        raw_root=tmp_path,
+    )
+
+    assert storage.latest_date("ree", "balance-electrico") == date(2024, 1, 5)
+    assert storage.latest_date("aemet", "climatologia-diaria") == date(2024, 1, 7)
+    assert storage.latest_date("ree", "unknown") is None

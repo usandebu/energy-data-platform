@@ -112,3 +112,56 @@ def test_s3_raw_storage_saves_data_and_metadata_objects():
     assert metadata["content_length"] == len(
         json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
     )
+
+
+def test_s3_raw_storage_returns_latest_date():
+    client = Mock()
+    paginator = Mock()
+    paginator.paginate.return_value = [
+        {
+            "Contents": [
+                {
+                    "Key": (
+                        "ree/balance-electrico/year=2024/month=01/day=02/"
+                        "data.json"
+                    )
+                },
+                {
+                    "Key": (
+                        "ree/balance-electrico/year=2024/month=01/day=05/"
+                        "metadata.json"
+                    )
+                },
+            ]
+        },
+        {
+            "Contents": [
+                {
+                    "Key": (
+                        "ree/balance-electrico/year=2024/month=01/day=05/"
+                        "data.json"
+                    )
+                },
+                {"Key": "ree/balance-electrico/readme.txt"},
+            ]
+        },
+    ]
+    client.get_paginator.return_value = paginator
+    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+
+    assert storage.latest_date("ree", "balance-electrico") == date(2024, 1, 5)
+    client.get_paginator.assert_called_once_with("list_objects_v2")
+    paginator.paginate.assert_called_once_with(
+        Bucket="energy-data-platform-dev-raw",
+        Prefix="ree/balance-electrico/",
+    )
+
+
+def test_s3_raw_storage_returns_none_when_no_raw_data_objects_exist():
+    client = Mock()
+    paginator = Mock()
+    paginator.paginate.return_value = [{"Contents": []}]
+    client.get_paginator.return_value = paginator
+    storage = S3RawStorage(bucket="energy-data-platform-dev-raw", client=client)
+
+    assert storage.latest_date("aemet", "climatologia-diaria") is None
