@@ -20,10 +20,39 @@ def required_env(name: str) -> str:
     return value
 
 
+def required_int_env(name: str) -> int:
+    try:
+        return int(required_env(name))
+    except ValueError as error:
+        raise RuntimeError(f"{name} must be an integer") from error
+
+
+def databricks_processing_window(lag_days: int, lookback_days: int) -> dict[str, str]:
+    end_offset = -lag_days
+    start_offset = -(lag_days + lookback_days - 1)
+
+    return {
+        "process_start_date": (
+            "{{{{ macros.ds_add(data_interval_end.strftime('%Y-%m-%d'), {}) }}}}"
+            .format(start_offset)
+        ),
+        "process_end_date": (
+            "{{{{ macros.ds_add(data_interval_end.strftime('%Y-%m-%d'), {}) }}}}"
+            .format(end_offset)
+        ),
+    }
+
+
 PROJECT_HOST_ROOT = required_env("PROJECT_HOST_ROOT")
 RAW_BUCKET = required_env("RAW_BUCKET")
 AWS_REGION = required_env("AWS_REGION")
-BRONZE_SILVER_JOB_ID = int(required_env("DATABRICKS_BRONZE_SILVER_JOB_ID"))
+REE_INCREMENTAL_JOB_ID = required_int_env("DATABRICKS_REE_INCREMENTAL_JOB_ID")
+AEMET_INCREMENTAL_JOB_ID = required_int_env("DATABRICKS_AEMET_INCREMENTAL_JOB_ID")
+REE_LAG_DAYS = required_int_env("REE_LAG_DAYS")
+AEMET_LAG_DAYS = required_int_env("AEMET_LAG_DAYS")
+DATABRICKS_INCREMENTAL_LOOKBACK_DAYS = required_int_env(
+    "DATABRICKS_INCREMENTAL_LOOKBACK_DAYS"
+)
 
 AWS_ENVIRONMENT = {
     key: value
@@ -78,7 +107,9 @@ with DAG(
             "python -m energy_pipeline.ingest.incremental "
             "--source all "
             "--raw-storage-backend s3 "
-            f"--raw-bucket {RAW_BUCKET}"
+            f"--raw-bucket {RAW_BUCKET} "
+            f"--ree-lag-days {REE_LAG_DAYS} "
+            f"--aemet-lag-days {AEMET_LAG_DAYS}"
         ),
         docker_url=DOCKER_URL,
         network_mode=NETWORK_MODE,
@@ -86,10 +117,30 @@ with DAG(
         environment=AWS_ENVIRONMENT,
     )
 
-    run_bronze_silver_job = DatabricksRunNowOperator(
-        task_id="run_bronze_silver_job",
+    run_ree_incremental_bronze_silver = DatabricksRunNowOperator(
+        task_id="run_ree_incremental_bronze_silver",
         databricks_conn_id="databricks_default",
-        job_id=BRONZE_SILVER_JOB_ID,
+        job_id=REE_INCREMENTAL_JOB_ID,
+        notebook_params={
+            "raw_bucket": RAW_BUCKET,
+            **databricks_processing_window(
+                lag_days=REE_LAG_DAYS,
+                lookback_days=DATABRICKS_INCREMENTAL_LOOKBACK_DAYS,
+            ),
+        },
+    )
+
+    run_aemet_incremental_bronze_silver = DatabricksRunNowOperator(
+        task_id="run_aemet_incremental_bronze_silver",
+        databricks_conn_id="databricks_default",
+        job_id=AEMET_INCREMENTAL_JOB_ID,
+        notebook_params={
+            "raw_bucket": RAW_BUCKET,
+            **databricks_processing_window(
+                lag_days=AEMET_LAG_DAYS,
+                lookback_days=DATABRICKS_INCREMENTAL_LOOKBACK_DAYS,
+            ),
+        },
     )
 
     dbt_build = DockerOperator(
@@ -105,4 +156,7 @@ with DAG(
         environment=DBT_ENVIRONMENT,
     )
 
-    ingest_incremental_raw_s3 >> run_bronze_silver_job >> dbt_build
+    ingest_incremental_raw_s3 >> [
+        run_ree_incremental_bronze_silver,
+        run_aemet_incremental_bronze_silver,
+    ] >> dbt_build
