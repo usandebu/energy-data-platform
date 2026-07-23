@@ -35,7 +35,7 @@ meteorológicos para responder preguntas como:
 - Docker
 - Airflow
 - dbt
-- AWS S3, Glue Data Catalog y Athena
+- AWS S3
 - Terraform
 - Databricks / PySpark
 - pytest y ruff
@@ -68,14 +68,17 @@ Ingesta Python
         v
 Data Lake en AWS S3
         |
-        +--> Glue Data Catalog / Athena
-        |
-        +--> dbt
-        |
-        +--> Databricks / PySpark
+        v
+Databricks / PySpark
         |
         v
-Modelos analíticos y datasets preparados para análisis
+Bronze / Silver Delta
+        |
+        v
+dbt sobre Databricks
+        |
+        v
+Gold analítico
 ```
 
 ---
@@ -119,8 +122,9 @@ Backfill por rango:
 uv run python -m energy_pipeline.ingest.backfill --source all --start-date 2026-01-01 --end-date 2026-01-07
 ```
 
-Los datos raw se guardan con particiones compatibles con S3, Glue, Athena y
-Spark:
+Los datos raw se guardan con particiones compatibles con S3 y Spark, y también
+preparadas para herramientas de catálogo/consulta como Glue o Athena si se
+quisieran añadir más adelante:
 
 ```text
 data/raw/ree/balance-electrico/year=2026/month=01/day=01/data.json
@@ -168,6 +172,21 @@ Ejemplo de configuración al dispararlo manualmente:
   "end_date": "2026-07-03",
   "raw_bucket": "energy-data-platform-dev-raw"
 }
+```
+
+El pipeline diario está documentado en:
+
+```text
+docs/pipeline-operativo.md
+```
+
+Flujo actual:
+
+```text
+Airflow
+  -> S3 Raw incremental
+  -> Databricks Bronze/Silver incremental
+  -> dbt Gold/tests
 ```
 
 Validación:
